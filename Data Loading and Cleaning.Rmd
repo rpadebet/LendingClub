@@ -1,0 +1,61 @@
+---
+title: "Lending Club Loan Analysis R Notebook"
+output: html_notebook
+---
+
+This project uses the lending club loan data set available on kaggle to explore the loan data and predict defaults using machine learning techniques. Our idea is to merge the dataset provided with external macro data to see if we can get additional insight and better predictions.
+
+### Getting the Data
+
+```{r}
+loan_url<-"https://www.kaggle.com/wendykan/lending-club-loan-data/downloads/loan.csv.zip"
+```
+### Reading the dataset
+```{r}
+library(data.table)
+library(tidyr)
+
+loan<-fread(input = "lending-club-loan-data/loan.csv",header = T)
+
+loan_lca<-fread(input = "Original Data/LoanStats3a_securev1.csv",header = T,skip = 1)
+loan_lcb<-fread(input = "Original Data/LoanStats3b_securev1.csv",header = T,skip = 1)
+loan_lcc<-fread(input = "Original Data/LoanStats3c_securev1.csv",header = T,skip = 1)
+loan_lcd<-fread(input = "Original Data/LoanStats3d_securev1.csv",header = T,skip = 1)
+
+loan_lc<-rbind(loan_lca,loan_lcb,loan_lcc,loan_lcd)
+```
+### Data View
+```{r}
+head(loan_lc,10)
+
+```
+
+### Data Summary
+```{r}
+str(loan_lc)
+```
+### Selecting Column Subset
+```{r}
+initial_cols<-c("id","application_type","loan_amnt","funded_amnt","term","int_rate","grade","sub_grade","emp_length","home_ownership","annual_inc","verification_status","annual_inc_joint","issue_d","loan_status","purpose","zip_code","addr_state","dti","dti_joint","earliest_cr_line","fico_range_low","fico_range_high","inq_last_6mths","open_acc","total_acc","pub_rec","revol_util","last_pymnt_d","next_pymnt_d","last_credit_pull_d","last_fico_range_high","last_fico_range_low","total_pymnt","total_pymnt_inv","total_rec_prncp","total_rec_int","total_rec_late_fee","recoveries","out_prncp","out_prncp_inv")
+
+loan_lc_sub<-loan_lc[,initial_cols,with=FALSE]
+
+numeric_cols<-c("loan_amnt","funded_amnt","int_rate","annual_inc","annual_inc_joint","dti","dti_joint","fico_range_low","fico_range_high","inq_last_6mths","last_fico_range_high","last_fico_range_low","open_acc","total_acc","revol_util","total_pymnt","total_pymnt_inv","total_rec_prncp","total_rec_int","total_rec_late_fee","recoveries","out_prncp","out_prncp_inv")
+
+factor_cols<-c("id","application_type","term","grade","sub_grade","emp_length","home_ownership","verification_status","loan_status","purpose","zip_code","addr_state","pub_rec")
+
+date_cols<-c("issue_d","earliest_cr_line")
+## ,"last_pymnt_d","next_pymnt_d","last_credit_pull_d")
+library(lubridate)
+
+loan_lc_sub[,(numeric_cols):= lapply(.SD, as.numeric), .SDcols = numeric_cols]
+loan_lc_sub[,(factor_cols):= lapply(.SD, as.factor), .SDcols = factor_cols]
+
+## clean up dates
+loan_lc_sub$issue_d<-gsub("^","01-",x = loan_lc_sub$issue_d)
+loan_lc_sub$earliest_cr_line<-gsub("^","01-",x = loan_lc_sub$earliest_cr_line)
+loan_lc_sub[,(date_cols):= lapply(.SD, as.Date,format="%d-%b-%Y"), .SDcols = date_cols]
+
+summary(loan_lc_sub)
+```
+
