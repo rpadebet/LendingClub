@@ -46,15 +46,38 @@ factor_cols<-c("id","application_type","term","grade","sub_grade","emp_length","
 
 date_cols<-c("issue_d","earliest_cr_line")
 ## ,"last_pymnt_d","next_pymnt_d","last_credit_pull_d")
+
+```
+### Cleaning Data
+```{r}
 library(lubridate)
+library(stringr)
+
+
+## Cleaning the interest rate column to remove % sign
+loan_lc_sub$int_rate<-gsub("%","",x = loan_lc_sub$int_rate)
+
+## Cleaning up term column to remove trailing spaces
+loan_lc_sub$term<-str_trim(loan_lc_sub$term)
 
 loan_lc_sub[,(numeric_cols):= lapply(.SD, as.numeric), .SDcols = numeric_cols]
 loan_lc_sub[,(factor_cols):= lapply(.SD, as.factor), .SDcols = factor_cols]
+```
+### Clean up dates
+```{r}
+loan_lc_sub$issue_d<-as_date(ifelse(stri_length(loan_lc_sub$issue_d)==6,
+                                    as.Date(gsub("^","01-",x=loan_lc_sub$issue_d),format="%d-%b-%y"),
+                                    as.Date(gsub("^","01-",x=loan_lc_sub$issue_d),format="%d-%b-%Y") ))
 
-## clean up dates
-loan_lc_sub$issue_d<-gsub("^","01-",x = loan_lc_sub$issue_d)
-loan_lc_sub$earliest_cr_line<-gsub("^","01-",x = loan_lc_sub$earliest_cr_line)
-loan_lc_sub[,(date_cols):= lapply(.SD, as.Date,format="%d-%b-%Y"), .SDcols = date_cols]
+loan_lc_sub$earliest_cr_line<-as_date(ifelse(stri_length(loan_lc_sub$earliest_cr_line)==6,
+                                    as.Date(gsub("^","01-",x=loan_lc_sub$earliest_cr_line),
+                                            format="%d-%b-%y",origin = "1900-01-01"),
+                                    as.Date(gsub("^","01-",x=loan_lc_sub$earliest_cr_line),
+                                            format="%d-%b-%Y",origin = "1900-01-01") ))
+
+## to clean up older credit histories which are shown as future credit histories. about 412 records
+
+loan_lc_sub[earliest_cr_line>"2015-01-01",earliest_cr_line:=earliest_cr_line-years(100)]
 
 summary(loan_lc_sub)
 ```
