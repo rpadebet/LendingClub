@@ -97,7 +97,33 @@ loan_test$PERFORM<-as.factor(ifelse(loan_test$loan_status %in% c("Current","Full
 loan_test[,RETURN := ((total_pymnt/funded_amnt)-1)/ifelse(loan_test$term %in% c("36 months"),3,6) ]
 loan_test$AGE <- loan_test$last_pymnt_d-loan_test$issue_d
 
-summary(loan_test)
+loan_defaults<-loan_test[PERFORM==0,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,dti,
+                                      issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE)]
 
+loan_paid<-loan_test[PERFORM==1,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,dti,
+                                      issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE)]
 
 ```
+
+### Plotting differences between paid and default loans
+
+```{r}
+par(mfrow=c(2,1))
+hist(as.numeric(loan_defaults$AGE))
+hist(as.numeric(loan_paid$AGE))
+```
+
+```{r}
+par(mfrow=c(2,1))
+hist(as.numeric(loan_defaults$RETURN))
+hist(as.numeric(loan_paid$RETURN))
+```
+
+### Joining with unemployment data
+```{r}
+loans<-rbind(loan_defaults,loan_paid)
+unemp.data<-read.csv("State Unemployment Data Monthly History.csv",header = T)
+unemp.data$date<-as_date(unemp.data$date)
+
+```
+

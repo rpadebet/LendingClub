@@ -30,14 +30,23 @@ clean_history<-as_date(ifelse(stri_length(loan_lc_sub$earliest_cr_line)==6,
 
 
 library(data.table)
+library(car)
 as.data.table(loan_test)
 
-loan_defaults<-loan_test[PERFORM==0,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,
+loan_defaults<-loan_test[PERFORM==0,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,dti,
                                       issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE)]
 
-loan_paid<-loan_test[PERFORM==1,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,
+loan_paid<-loan_test[PERFORM==1,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,dti,
                                       issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE)]
 
 
+loan_lc_sub[id==1069800]
+
+par(mfrow=c(2,1))
+hist(as.numeric(loan_defaults$AGE))
+hist(as.numeric(loan_paid$AGE))
 
 
+par(mfrow=c(2,1))
+hist(as.numeric(loan_defaults$RETURN))
+hist(as.numeric(loan_paid$RETURN))
