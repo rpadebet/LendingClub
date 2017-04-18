@@ -28,6 +28,16 @@ clean_history<-as_date(ifelse(stri_length(loan_lc_sub$earliest_cr_line)==6,
                                              as.Date(gsub("^","01-",x=loan_lc_sub$earliest_cr_line),format="%d-%b-%Y") ))
 
 
-head(dates_df[dates_len==6,],100)
+
+library(data.table)
+as.data.table(loan_test)
+
+loan_defaults<-loan_test[PERFORM==0,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,
+                                      issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE)]
+
+loan_paid<-loan_test[PERFORM==1,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,
+                                      issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE)]
+
+
 
 

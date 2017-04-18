@@ -52,6 +52,7 @@ date_cols<-c("issue_d","earliest_cr_line")
 ```{r}
 library(lubridate)
 library(stringr)
+library(stringi)
 
 
 ## Cleaning the interest rate column to remove % sign
@@ -79,6 +80,24 @@ loan_lc_sub$earliest_cr_line<-as_date(ifelse(stri_length(loan_lc_sub$earliest_cr
 
 loan_lc_sub[earliest_cr_line>"2015-01-01",earliest_cr_line:=earliest_cr_line-years(100)]
 
+loan_lc_sub$last_pymnt_d<-as_date(ifelse(stri_length(loan_lc_sub$last_pymnt_d)==6,
+                                    as.Date(gsub("^","01-",x=loan_lc_sub$last_pymnt_d),
+                                            format="%d-%b-%y",origin = "1900-01-01"),
+                                    as.Date(gsub("^","01-",x=loan_lc_sub$last_pymnt_d),
+                                            format="%d-%b-%Y",origin = "1900-01-01") ))
+
 summary(loan_lc_sub)
 ```
+### Creating new attributes and prediction columns
 
+```{r}
+loan_test<-loan_lc_sub
+
+loan_test$PERFORM<-as.factor(ifelse(loan_test$loan_status %in% c("Current","Fully Paid"),1,0))
+loan_test[,RETURN := ((total_pymnt/funded_amnt)-1)/ifelse(loan_test$term %in% c("36 months"),3,6) ]
+loan_test$AGE <- loan_test$last_pymnt_d-loan_test$issue_d
+
+summary(loan_test)
+
+
+```
