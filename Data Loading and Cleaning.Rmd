@@ -98,10 +98,10 @@ loan_test[,RETURN := ((total_pymnt/funded_amnt)-1)/ifelse(loan_test$term %in% c(
 loan_test$AGE <- loan_test$last_pymnt_d-loan_test$issue_d
 
 loan_defaults<-loan_test[PERFORM==0,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,dti,
-                                      issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE)]
+                                      issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE,PERFORM)]
 
 loan_paid<-loan_test[PERFORM==1,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,dti,
-                                      issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE)]
+                                issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE,PERFORM)]
 
 ```
 
@@ -112,6 +112,7 @@ par(mfrow=c(2,1))
 hist(as.numeric(loan_defaults$AGE))
 hist(as.numeric(loan_paid$AGE))
 ```
+- Number of loans alive as a proportion of loans alive at previous month
 
 ```{r}
 par(mfrow=c(2,1))
@@ -123,7 +124,32 @@ hist(as.numeric(loan_paid$RETURN))
 ```{r}
 loans<-rbind(loan_defaults,loan_paid)
 unemp.data<-read.csv("State Unemployment Data Monthly History.csv",header = T)
+unemp.data$state<-as.factor(str_trim(unemp.data$state))
 unemp.data$date<-as_date(unemp.data$date)
+unemp.data<-as.data.table(unemp.data)
+```
+### Getting uneployment rate for each observation
+```{r}
 
+getUnempRate<-function(state_input,date_input){
+    rate<-as.numeric(unemp.data[(str_trim(state)==str_trim(state_input))&(date==date_input),value])
+    return(rate)
+}
+
+loans[unemp.data,UNEMP_RATE_ISSUE_DT:=i.value,on=c(addr_state="state",issue_d="date")]
+loans[unemp.data,UNEMP_RATE_LASTPAY_DT:=i.value,on=c(addr_state="state",last_pymnt_d="date")]
+
+```
+
+### Marking Prepaid loans and maturity of loan
+```{r}
+loans[,MATURITY:=issue_d+months(36)][,PREPAID:=0]
+loans[(PERFORM==1)&(year(last_pymnt_d)<2017),PREPAID:=ifelse(last_pymnt_d<MATURITY,1,0)]
+
+
+```
+
+```{r}
+write.csv(x = loans,file = "LC Loan Data.csv",row.names = F)
 ```
 
