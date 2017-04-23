@@ -98,7 +98,7 @@ loan_test[,RETURN := ((total_pymnt/funded_amnt)-1)/ifelse(loan_test$term %in% c(
 loan_test$AGE <- loan_test$last_pymnt_d-loan_test$issue_d
 
 loan_defaults<-loan_test[PERFORM==0,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,dti,
-                                      issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE,PERFORM)]
+                                issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE,PERFORM)]
 
 loan_paid<-loan_test[PERFORM==1,.(id,loan_amnt,total_pymnt,term,int_rate,grade,emp_length,annual_inc,dti,
                                 issue_d,last_pymnt_d,purpose,addr_state,earliest_cr_line,fico_range_low,RETURN,AGE,PERFORM)]

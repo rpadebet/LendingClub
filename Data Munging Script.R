@@ -138,8 +138,35 @@ unemp.data<-as.data.table(unemp.data)
 
 ### Joining with Unemployment Data
 loan_hist[unemp.data,UNEMP.RT_ISS:=i.value,on=c(addr_state="state",issue_d="date")]
-loan_hist[unemp.data,UNEMP.RT.PAY:=i.value,on=c(addr_state="state",last_pymnt_d="date")]
+loan_hist[unemp.data,UNEMP.RT.PAY:=i.value,on=c(addr_state="state",NEXT_PAY_DT="date")]
 
 
-### Saving as a file
-write.csv(loan_hist,"Loan History.csv")
+### Saving as a file for each vintage and term
+
+#2007-2011
+loan_hist_36_2007_2011 <- loan_hist[(term=="36 months")&(VINTAGE %in% c(2007:2011)),]
+write.csv(loan_hist_36_2007_2011,"LoanHistory/Loan History 36_2007_2011.csv")
+
+loan_hist_60_2007_2011 <- loan_hist[(term=="60 months")&(VINTAGE %in% c(2007:2011)),]
+write.csv(loan_hist_36_2007_2011,"LoanHistory/Loan History 60_2007_2011.csv")
+
+# 2012-2013
+loan_hist_36_2012_2013 <- loan_hist[(term=="36 months")&(VINTAGE %in% c(2012:2013)),]
+write.csv(loan_hist_36_2012_2013,"LoanHistory/Loan History 36_2012_2013.csv")
+
+loan_hist_60_2012_2013 <- loan_hist[(term=="60 months")&(VINTAGE %in% c(2012:2013)),]
+write.csv(loan_hist_60_2012_2013,"LoanHistory/Loan History 60_2012_2013.csv")
+
+# 2014
+loan_hist_36_2014 <- loan_hist[(term=="36 months")&(VINTAGE==2014),]
+write.csv(loan_hist_36_2014,"LoanHistory/Loan History 36_2014.csv")
+
+loan_hist_60_2014 <- loan_hist[(term=="60 months")&(VINTAGE==2014),]
+write.csv(loan_hist_60_2014,"LoanHistory/Loan History 60_2014.csv")
+
+# 2015
+loan_hist_36_2015 <- loan_hist[(term=="36 months")&(VINTAGE==2015),]
+write.csv(loan_hist_36_2015,"LoanHistory/Loan History 36_2015.csv")
+
+loan_hist_60_2015 <- loan_hist[(term=="60 months")&(VINTAGE==2015),]
+write.csv(loan_hist_60_2015,"LoanHistory/Loan History 60_2015.csv")
