@@ -66,3 +66,58 @@ plot(x = loan_linear_mdl$xlevels$MONTH.AGE.BEGIN,
      ylab = "Default Rate",
      main = "California Lending Club Loans Sample (2012-2015)")
 ```
+
+---
+
+### Analyzing All States Sample
+Sample Data is for loans issues from 2011 through to 2015 onwards in all the states in the US with a 36 month term. A random sample of 100,000 such loans is chosen for the analysis
+```{r}
+loan_sample_all<-fread("Sample Loans 36 2011_2015.csv", header=T)
+head(loan_sample_all)
+```
+
+---
+
+#### Select the columns to fit a model
+
+- Remove records for loan status after Oct 2016 (inclusive) to avoid dealing with Delinquent loans
+- Normalize Unemployment Rate at begin date and interest rate columns by subtracting means
+- Select the columns which are going to be used in the model only
+- Factorize the age of the loan
+
+```{r}
+loan_sample_all_model<-as.tbl(loan_sample_all)%>%
+    filter(as.Date(MONTH_BEGIN_PAY_DT,origin=Sys.Date()) < 
+               as.Date("2016-10-01",origin=Sys.Date()))%>%
+    select(id,int_rate,MONTH.AGE.BEGIN,DEFAULT,UNEMP.RT.BEGIN_DT)%>%
+    mutate(int_rate = int_rate-mean(int_rate))%>%
+    mutate(UNEMP.RT.BEGIN_DT = UNEMP.RT.BEGIN_DT-mean(UNEMP.RT.BEGIN_DT))%>%
+    mutate(MONTH.AGE.BEGIN = as.factor(MONTH.AGE.BEGIN))
+
+head(loan_sample_all_model)
+```
+
+---
+
+#### Fit a Linear Model
+```{r}
+loan_linear_mdl_all<-lm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT+MONTH.AGE.BEGIN - 1,
+                     data = loan_sample_all_model)
+
+summary(loan_linear_mdl_all)
+
+```
+
+
+---
+
+#### Plotting Baseline Hazard Rate for ALL States Loans
+```{r}
+plot(x = loan_linear_mdl_all$xlevels$MONTH.AGE.BEGIN,
+     y = loan_linear_mdl_all$coefficients[-(1:2)],
+     type = 'h',
+     col = 'red',
+     xlab = "Age of Loan (months)",
+     ylab = "Default Rate",
+     main = "Lending Club Loans Sample (2011-2015)")
+```
