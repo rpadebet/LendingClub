@@ -16,7 +16,7 @@ library(survminer)
 ---
 
 #### Load the Sample Data
-Sample Data is for loans issues from 2012 through to 215 onwards in the state of California with a 36 month term. A random sample of 1000 such loans is chosen for the analysis
+Sample Data is for loans issues from 2012 through to 2015 onwards in the state of California with a 36 month term. A random sample of 1000 such loans is chosen for the analysis
 ```{r}
 loan_sample<-read.csv("Sample Loans CA 36 2012_2015.csv", header=T)
 head(loan_sample)
@@ -47,10 +47,22 @@ head(loan_sample_model)
 
 #### Fit a Linear Model
 ```{r}
-loan_linear_mdl<-glm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT+MONTH.AGE.BEGIN,
-                     data = loan_sample_model,
-                     family = "binomial")
+loan_linear_mdl<-lm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT+MONTH.AGE.BEGIN - 1,
+                     data = loan_sample_model)
 
 summary(loan_linear_mdl)
+
 ```
 
+---
+
+#### Plotting Baseline Hazard Rate for California Loans
+```{r}
+plot(x = loan_linear_mdl$xlevels$MONTH.AGE.BEGIN,
+     y = loan_linear_mdl$coefficients[-(1:2)],
+     type = 'h',
+     col = 'blue',
+     xlab = "Age of Loan (months)",
+     ylab = "Default Rate",
+     main = "California Lending Club Loans Sample (2012-2015)")
+```
