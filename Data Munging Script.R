@@ -69,18 +69,21 @@ summary(loan_sub)
 
 loan_mod<-loan_sub
 
-## Performing Loans
-loan_mod$PERFORM<-ifelse(loan_mod$loan_status %in% c("Current","Fully Paid"),1,0)
+## Defaulted Delinquent Current Performing Loans
+loan_mod$DEFAULT<-ifelse(loan_mod$loan_status %in% c("Charged Off"),1,0)
+loan_mod$DELINQ<-ifelse(!(loan_mod$loan_status %in% c("Charged Off","Fully Paid","Current")),1,0)
+loan_mod$CURRENT<-ifelse(loan_mod$loan_status %in% c("Current"),1,0)
+loan_mod$FULLPAID <-ifelse(loan_mod$loan_status %in% c("Fully Paid"),1,0)
+
 ## Return for each Loan
-loan_mod[,RETURN := ((total_pymnt/funded_amnt)-1)/ifelse(loan_mod$term %in% c("36 months"),3,6) ]
+# loan_mod[,RETURN := ((total_pymnt/funded_amnt)-1)/ifelse(loan_mod$term %in% c("36 months"),3,6) ]
 ## Age in days of each Loan
 loan_mod$AGE <- loan_mod$last_pymnt_d-loan_mod$issue_d
-## Maturity Date for each Loan
+
+## Maturity Date for each Loan and initializing all loans to not prepaid
 loan_mod[,MATURITY:=issue_d+months(ifelse(loan_mod$term %in% c("36 months"),36,60))][,PREPAID:=0]
-## Current Loans
-loan_mod[,CURRENT:=ifelse(loan_status=="Current",1,0)]
 ## Prepaid status for each Loan (select only fully paid loans)
-loan_mod[(PERFORM==1)&(CURRENT==0),PREPAID:=ifelse(last_pymnt_d<MATURITY,1,0)]
+loan_mod[(FULLPAID==1),PREPAID:=ifelse(last_pymnt_d<MATURITY,1,0)]
 ## Vintage of Loan
 loan_mod[,VINTAGE:=year(issue_d)]
 
@@ -92,15 +95,15 @@ loan_36<-loan_mod[term=="36 months",.(id,loan_amnt,total_pymnt,term,
                              int_rate,grade,emp_length,annual_inc,dti,
                              issue_d,last_pymnt_d,purpose,addr_state,
                              earliest_cr_line,fico_range_low,
-                             RETURN,AGE,MATURITY,VINTAGE,
-                             PERFORM,CURRENT,PREPAID)]
+                             AGE,MATURITY,VINTAGE,
+                             DEFAULT,DELINQ,CURRENT,FULLPAID,PREPAID)]
 
 loan_60<-loan_mod[term=="60 months",.(id,loan_amnt,total_pymnt,term,
-                             int_rate,grade,emp_length,annual_inc,dti,
-                             issue_d,last_pymnt_d,purpose,addr_state,
-                             earliest_cr_line,fico_range_low,
-                             RETURN,AGE,MATURITY,VINTAGE,
-                             PERFORM,CURRENT,PREPAID)]
+                                      int_rate,grade,emp_length,annual_inc,dti,
+                                      issue_d,last_pymnt_d,purpose,addr_state,
+                                      earliest_cr_line,fico_range_low,
+                                      AGE,MATURITY,VINTAGE,
+                                      DEFAULT,DELINQ,CURRENT,FULLPAID,PREPAID)]
 
 
 ### Creating Wide table form with intermediate payment dates
@@ -114,21 +117,64 @@ for(i in seq(1:60)){
 }
 
 
-### Converting it back into tall form
+### Converting it back into tall form with each record now a loan of 1 month maturity
 loan_36_hist<-as.tbl(loan_36)%>%
-    gather(key = MONTH.AGE, value=NEXT_PAY_DT,M1:M36)%>%
+    gather(key = MONTH.AGE, value=MONTH_END_PAY_DT,M1:M36)%>%
+    mutate(MONTH.AGE.END = gsub("M","",MONTH.AGE))%>%
+    mutate(MONTH.AGE.BEGIN = as.numeric(MONTH.AGE.END) - 1)%>%
+    mutate(MONTH_BEGIN_PAY_DT = MONTH_END_PAY_DT - months(1))%>%
     as.data.table()
 
 loan_60_hist<-as.tbl(loan_60)%>%
-    gather(key = MONTH.AGE, value=NEXT_PAY_DT,M1:M60)%>%
+    gather(key = MONTH.AGE, value=MONTH_END_PAY_DT,M1:M60)%>%
+    mutate(MONTH.AGE.END = gsub("M","",MONTH.AGE))%>%
+    mutate(MONTH.AGE.BEGIN = as.numeric(MONTH.AGE.END) - 1)%>%
+    mutate(MONTH_BEGIN_PAY_DT = MONTH_END_PAY_DT - months(1))%>%
     as.data.table()
 
-### Creating Survival Column
-loan_36_hist[,SURVIVED:=ifelse(NEXT_PAY_DT<=last_pymnt_d,1,0)]
-loan_60_hist[,SURVIVED:=ifelse(NEXT_PAY_DT<=last_pymnt_d,1,0)]
+### Creating Survival Flag Column
+
+# For defaulted loans (survived until next month of last payment)
+loan_36_hist[(DEFAULT==1)|(DELINQ==1),SURVIVED:=ifelse(MONTH_BEGIN_PAY_DT<=last_pymnt_d+months(1),1,0)]
+loan_60_hist[(DEFAULT==1)|(DELINQ==1),SURVIVED:=ifelse(MONTH_BEGIN_PAY_DT<=last_pymnt_d+months(1),1,0)]
+
+# For other loans (survived only the month the last payment was received)
+loan_36_hist[!((DEFAULT==1)|(DELINQ==1)),SURVIVED:=ifelse(MONTH_BEGIN_PAY_DT<=last_pymnt_d,1,0)]
+loan_60_hist[!((DEFAULT==1)|(DELINQ==1)),SURVIVED:=ifelse(MONTH_BEGIN_PAY_DT<=last_pymnt_d,1,0)]
+
+
+# Removing Observations when loan has not survived
+loan_36_prune <- as.tbl(loan_36_hist)%>%
+    filter(SURVIVED==1)%>%
+    mutate(DEFAULT = ifelse((last_pymnt_d+months(1)==MONTH_BEGIN_PAY_DT),0,1))
+
+loan_60_prune <- as.tbl(loan_60_hist)%>%
+    filter(SURVIVED==1)
+
+# Changing Default and Delinquent columns to be 1 only in the month of default 
+# and removing survived column
+loan_36_prune <- mutate(loan_36_prune,SURVIVED = NULL)
+loan_36_prune <- as.data.table(loan_36_prune)    
+loan_36_prune[DEFAULT==1,DEFAULT:=ifelse(MONTH_BEGIN_PAY_DT<last_pymnt_d+months(1),0,1)]
+loan_36_prune[DELINQ==1,DELINQ:=ifelse(MONTH_BEGIN_PAY_DT<last_pymnt_d+months(1),0,1)]
+
+loan_60_prune <- mutate(loan_60_prune,SURVIVED = NULL)
+loan_60_prune <- as.data.table(loan_60_prune)    
+loan_60_prune[DEFAULT==1,DEFAULT:=ifelse(MONTH_BEGIN_PAY_DT<last_pymnt_d+months(1),0,1)]
+loan_60_prune[DELINQ==1,DELINQ:=ifelse(MONTH_BEGIN_PAY_DT<last_pymnt_d+months(1),0,1)]
 
 ### Recombining Data Sets
-loan_hist<-rbind(loan_36_hist,loan_60_hist)
+loan_pruned<-rbind(loan_36_prune,loan_60_prune)
+
+
+### Simplifying Dataset to fit model
+loan_mdl<-as.tbl(loan_pruned)%>%
+    select(id,loan_amnt,term,int_rate,issue_d,last_pymnt_d,addr_state,
+           MATURITY,VINTAGE,MONTH_BEGIN_PAY_DT,MONTH_END_PAY_DT,
+           MONTH.AGE.BEGIN,MONTH.AGE.END,DEFAULT,DELINQ,
+           FULLPAID,CURRENT,PREPAID)%>%
+    arrange(id,MONTH.AGE.BEGIN)
+    
 
 ### Getting Unemployment Data
 unemp.data<-read.csv("State Unemployment Data Monthly History.csv",header = T)
@@ -137,36 +183,11 @@ unemp.data$date<-as_date(unemp.data$date)
 unemp.data<-as.data.table(unemp.data)
 
 ### Joining with Unemployment Data
-loan_hist[unemp.data,UNEMP.RT_ISS:=i.value,on=c(addr_state="state",issue_d="date")]
-loan_hist[unemp.data,UNEMP.RT.PAY:=i.value,on=c(addr_state="state",NEXT_PAY_DT="date")]
+loan_mdl<-as.data.table(loan_mdl)
+loan_mdl[unemp.data,UNEMP.RT_ISS:=i.value,on=c(addr_state="state",issue_d="date")]
+loan_mdl[unemp.data,UNEMP.RT.BEGIN_DT:=i.value,on=c(addr_state="state",MONTH_BEGIN_PAY_DT="date")]
 
 
 ### Saving as a file for each vintage and term
 
-#2007-2011
-loan_hist_36_2007_2011 <- loan_hist[(term=="36 months")&(VINTAGE %in% c(2007:2011)),]
-write.csv(loan_hist_36_2007_2011,"LoanHistory/Loan History 36_2007_2011.csv")
-
-loan_hist_60_2007_2011 <- loan_hist[(term=="60 months")&(VINTAGE %in% c(2007:2011)),]
-write.csv(loan_hist_36_2007_2011,"LoanHistory/Loan History 60_2007_2011.csv")
-
-# 2012-2013
-loan_hist_36_2012_2013 <- loan_hist[(term=="36 months")&(VINTAGE %in% c(2012:2013)),]
-write.csv(loan_hist_36_2012_2013,"LoanHistory/Loan History 36_2012_2013.csv")
-
-loan_hist_60_2012_2013 <- loan_hist[(term=="60 months")&(VINTAGE %in% c(2012:2013)),]
-write.csv(loan_hist_60_2012_2013,"LoanHistory/Loan History 60_2012_2013.csv")
-
-# 2014
-loan_hist_36_2014 <- loan_hist[(term=="36 months")&(VINTAGE==2014),]
-write.csv(loan_hist_36_2014,"LoanHistory/Loan History 36_2014.csv")
-
-loan_hist_60_2014 <- loan_hist[(term=="60 months")&(VINTAGE==2014),]
-write.csv(loan_hist_60_2014,"LoanHistory/Loan History 60_2014.csv")
-
-# 2015
-loan_hist_36_2015 <- loan_hist[(term=="36 months")&(VINTAGE==2015),]
-write.csv(loan_hist_36_2015,"LoanHistory/Loan History 36_2015.csv")
-
-loan_hist_60_2015 <- loan_hist[(term=="60 months")&(VINTAGE==2015),]
-write.csv(loan_hist_60_2015,"LoanHistory/Loan History 60_2015.csv")
+# Savings Files.R script
