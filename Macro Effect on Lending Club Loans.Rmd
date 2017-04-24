@@ -47,7 +47,9 @@ head(loan_sample_model)
 
 #### Fit a Linear Model
 ```{r}
-loan_linear_mdl<-lm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT+MONTH.AGE.BEGIN,data = loan_sample_model)
+loan_linear_mdl<-glm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT+MONTH.AGE.BEGIN,
+                     data = loan_sample_model,
+                     family = "binomial")
 
 summary(loan_linear_mdl)
 ```
