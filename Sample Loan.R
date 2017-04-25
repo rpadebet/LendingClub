@@ -46,7 +46,7 @@ loan_dt<-loan_mdl[(id %in% loan_ids),]
 write.csv(loan_dt,"Sample Loans 36 2011_2015.csv")
 
 #####################################################
-# Loan from all States 2011 to 2015 - 36 months
+# Loan from all States 2012H1 - 36 months
 #####################################################
 # state <- "CA"
 # vintage <-c(2011:2015)

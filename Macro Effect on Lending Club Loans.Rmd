@@ -126,6 +126,7 @@ plot(x = loan_linear_mdl_all$xlevels$MONTH.AGE.BEGIN,
 
 
 ---
+
 ### Analyzing All States Sample for loans issued in 2012H1
 Sample Data is for loans issues from 1-Jan-2012 through to 30-Jun-2012, in all the states in the US with a 36 month term. A random sample of 10,000 such loans is chosen for the analysis
 ```{r}
@@ -221,3 +222,63 @@ plot(x = loan_linear_mdl_all_uis$xlevels$MONTH.AGE.BEGIN,
      main = "Lending Club Loans Sample (2011-2015)" )
 mtext("Controlled for Unemployment Rate at Issuance",col="red",side=3)
 ```
+
+---
+
+### Analyzing loans controlling for FICO scores
+Sample Data is for loans issues from 2011 through to 2015, in all the states in the US with a 36 month term. A random sample of 100,000 such loans is chosen for the analysis
+```{r}
+loan_sample_all<-fread("Sample Loans 36 2011_2015.csv", header=T)
+head(loan_sample_all)
+```
+
+### Fitting the model on loans
+
+- Remove records for loan status after Oct 2016 (inclusive) to avoid dealing with Delinquent loans
+- Normalize Unemployment Rate at begin date and interest rate columns by subtracting means
+- Select the columns which are going to be used in the model only
+- Factorize the age of the loan
+
+```{r}
+loan_sample_all_model_fico<-as.tbl(loan_sample_all)%>%
+    filter(as.Date(MONTH_BEGIN_PAY_DT,origin=Sys.Date()) < 
+               as.Date("2016-10-01",origin=Sys.Date()))%>%
+    select(id,int_rate,fico_range_low,MONTH.AGE.BEGIN,DEFAULT,UNEMP.RT_ISS,UNEMP.RT.BEGIN_DT)%>%
+    mutate(int_rate = int_rate-mean(int_rate))%>%
+    mutate(UNEMP.RT.BEGIN_DT = UNEMP.RT.BEGIN_DT-mean(UNEMP.RT.BEGIN_DT))%>%
+    mutate(UNEMP.RT_ISS = UNEMP.RT_ISS-mean(UNEMP.RT_ISS))%>%
+    mutate(fico_range_low = fico_range_low-mean(fico_range_low))%>%
+    mutate(MONTH.AGE.BEGIN = as.factor(MONTH.AGE.BEGIN))
+
+head(loan_sample_all_model_fico)
+```
+
+---
+
+#### Fit a Linear Model
+```{r}
+loan_linear_mdl_all_fico<-lm(DEFAULT ~ int_rate + fico_range_low + UNEMP.RT_ISS + 
+                                 UNEMP.RT.BEGIN_DT + MONTH.AGE.BEGIN - 1,
+                     data = loan_sample_all_model_fico)
+
+summary(loan_linear_mdl_all_fico)
+
+```
+
+---
+
+#### Baseline Hazard Rate for ALL States Loans (Controlling for FICO)
+```{r}
+par(mar = c(3,3,4,2))
+plot(x = loan_linear_mdl_all_fico$xlevels$MONTH.AGE.BEGIN,
+     y = loan_linear_mdl_all_fico$coefficients[-(1:4)],
+     type = 'h',
+     col = "turquoise",
+     lwd =5,
+     xlab = "Age of Loan (months)",
+     ylab = "Default Rate",
+     main = "Lending Club Loans Sample (2011-2015)" )
+mtext("Controlled for FICO",col="red",side=3)
+```
+
+---

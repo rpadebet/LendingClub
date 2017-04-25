@@ -169,7 +169,7 @@ loan_pruned<-rbind(loan_36_prune,loan_60_prune)
 
 ### Simplifying Dataset to fit model
 loan_mdl<-as.tbl(loan_pruned)%>%
-    select(id,loan_amnt,term,int_rate,issue_d,last_pymnt_d,addr_state,
+    select(id,loan_amnt,term,int_rate,issue_d,last_pymnt_d,addr_state,fico_range_low,
            MATURITY,VINTAGE,MONTH_BEGIN_PAY_DT,MONTH_END_PAY_DT,
            MONTH.AGE.BEGIN,MONTH.AGE.END,DEFAULT,DELINQ,
            FULLPAID,CURRENT,PREPAID)%>%
