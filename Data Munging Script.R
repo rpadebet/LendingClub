@@ -94,14 +94,14 @@ loan_mod[is.na(AGE),last_pymnt_d:=issue_d][is.na(AGE),AGE:=0]
 loan_36<-loan_mod[term=="36 months",.(id,loan_amnt,total_pymnt,term,
                              int_rate,grade,emp_length,annual_inc,dti,
                              issue_d,last_pymnt_d,purpose,addr_state,
-                             earliest_cr_line,fico_range_low,
+                             earliest_cr_line,fico_range_low,zip_code,
                              AGE,MATURITY,VINTAGE,
                              DEFAULT,DELINQ,CURRENT,FULLPAID,PREPAID)]
 
 loan_60<-loan_mod[term=="60 months",.(id,loan_amnt,total_pymnt,term,
                                       int_rate,grade,emp_length,annual_inc,dti,
                                       issue_d,last_pymnt_d,purpose,addr_state,
-                                      earliest_cr_line,fico_range_low,
+                                      earliest_cr_line,fico_range_low,zip_code,
                                       AGE,MATURITY,VINTAGE,
                                       DEFAULT,DELINQ,CURRENT,FULLPAID,PREPAID)]
 
@@ -169,23 +169,36 @@ loan_pruned<-rbind(loan_36_prune,loan_60_prune)
 
 ### Simplifying Dataset to fit model
 loan_mdl<-as.tbl(loan_pruned)%>%
-    select(id,loan_amnt,term,int_rate,issue_d,last_pymnt_d,addr_state,fico_range_low,
+    select(id,loan_amnt,term,int_rate,issue_d,last_pymnt_d,addr_state,fico_range_low,zip_code,
            MATURITY,VINTAGE,MONTH_BEGIN_PAY_DT,MONTH_END_PAY_DT,
            MONTH.AGE.BEGIN,MONTH.AGE.END,DEFAULT,DELINQ,
            FULLPAID,CURRENT,PREPAID)%>%
     arrange(id,MONTH.AGE.BEGIN)
     
+saveRDS(loan_mdl,"Loans for Model")
 
 ### Getting Unemployment Data
-unemp.data<-read.csv("State Unemployment Data Monthly History.csv",header = T)
-unemp.data$state<-as.factor(str_trim(unemp.data$state))
+unemp.data<-read.csv("Monthly Zip3 Unemployment Rate.csv",header = T)
+unemp.data$state_abbrev<-as.factor(str_trim(unemp.data$state_abbrev))
+unemp.data$zip3<-as.factor(str_trim(unemp.data$zip3))
 unemp.data$date<-as_date(unemp.data$date)
 unemp.data<-as.data.table(unemp.data)
 
 ### Joining with Unemployment Data
 loan_mdl<-as.data.table(loan_mdl)
-loan_mdl[unemp.data,UNEMP.RT_ISS:=i.value,on=c(addr_state="state",issue_d="date")]
-loan_mdl[unemp.data,UNEMP.RT.BEGIN_DT:=i.value,on=c(addr_state="state",MONTH_BEGIN_PAY_DT="date")]
+loan_mdl$zip_code<-as.factor(str_trim(loan_mdl$zip_code))
+loan_mdl[unemp.data,UNEMP.RT_ISS:=i.value,on=c(zip_code="zip3",issue_d="date")]
+loan_mdl[unemp.data,UNEMP.RT.BEGIN_DT:=i.value,on=c(zip_code="zip3",MONTH_BEGIN_PAY_DT="date")]
+
+### Getting Zip3 Income Data
+income.data<-read.csv("Income Data.csv",header = T)
+income.data<-as.data.table(income.data)
+income
+
+### Joining with Zip3 Income Data
+loan_mdl<-loan_mdl[,CurrentYear:=year(MONTH_BEGIN_PAY_DT)]
+loan_mdl[income.data,AVG.INC.ZIP:=i.AvgIncome, on=c(zip_code="Zip3",CurrentYear="YEAR")]
+loan_mdl$CurrentYear<-NULL
 
 
 ### Saving as a file for each vintage and term

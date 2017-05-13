@@ -58,7 +58,6 @@ loan_sample_model<-as.tbl(loan_sample)%>%
     mutate(UNEMP.RT.BEGIN_DT = UNEMP.RT.BEGIN_DT-mean(UNEMP.RT.BEGIN_DT))%>%
     mutate(MONTH.AGE.BEGIN = as.factor(MONTH.AGE.BEGIN))
 
-head(loan_sample_model)
 ```
 
 ---
@@ -69,7 +68,12 @@ head(loan_sample_model)
 loan_linear_mdl<-lm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT+MONTH.AGE.BEGIN - 1,
                      data = loan_sample_model)
 
-summary(loan_linear_mdl)
+model_stats<-model_summary(experiment = 1,
+                           model = loan_linear_mdl,
+                           geography = "CA",
+                           period = "2012-2015")
+all_model_stats<-model_stats[0,]
+all_model_stats<-rbind(model_stats,all_model_stats)
 
 ```
 
@@ -97,8 +101,8 @@ plot(x = loan_linear_mdl$xlevels$MONTH.AGE.BEGIN,
 
 Sample Data is for loans issues from 1-Jan-2012 through to 30-Sep-2013, in all the states in the US with a 36 month term. A random sample of 10,000 such loans is chosen for the analysis
 ```{r}
-loan_sample_all_2012H1<-fread("Sample Loans 36 2012_2013.csv", header=T)
-head(loan_sample_all_2012H1)
+loan_sample_all_2012_2013<-fread("Sample Loans 36 2012_2013.csv", header=T)
+head(loan_sample_all_2012_2013)
 ```
 
 ---
@@ -112,7 +116,7 @@ head(loan_sample_all_2012H1)
 - Factorize the age of the loan
 
 ```{r}
-loan_sample_all_model_2012H1<-as.tbl(loan_sample_all_2012H1)%>%
+loan_sample_all_model_2012_2013<-as.tbl(loan_sample_all_2012_2013)%>%
     filter(as.Date(MONTH_BEGIN_PAY_DT,origin=Sys.Date()) < 
                as.Date("2016-10-01",origin=Sys.Date()))%>%
     select(id,int_rate,MONTH.AGE.BEGIN,DEFAULT,UNEMP.RT_ISS)%>%
@@ -120,7 +124,6 @@ loan_sample_all_model_2012H1<-as.tbl(loan_sample_all_2012H1)%>%
     mutate(UNEMP.RT_ISS = UNEMP.RT_ISS-mean(UNEMP.RT_ISS))%>%
     mutate(MONTH.AGE.BEGIN = as.factor(MONTH.AGE.BEGIN))
 
-head(loan_sample_all_model_2012H1)
 ```
 
 ---
@@ -128,10 +131,15 @@ head(loan_sample_all_model_2012H1)
 #### Fit a Linear Model 
 **(2012-2013Q3 Unemployment Issuance)**
 ```{r}
-loan_linear_mdl_all_2012H1<-lm(DEFAULT ~ int_rate + UNEMP.RT_ISS+MONTH.AGE.BEGIN - 1,
-                     data = loan_sample_all_model_2012H1)
+loan_linear_mdl_all_2012_2013<-lm(DEFAULT ~ int_rate + UNEMP.RT_ISS+MONTH.AGE.BEGIN - 1,
+                     data = loan_sample_all_model_2012_2013)
 
-summary(loan_linear_mdl_all_2012H1)
+model_stats2<-model_summary(experiment = 2,
+                           model = loan_linear_mdl_all_2012_2013,
+                           geography = "ALL",
+                           period = "2012Q1-2013Q3")
+
+all_model_stats<-rbind(model_stats2,all_model_stats)
 
 ```
 
@@ -141,8 +149,8 @@ summary(loan_linear_mdl_all_2012H1)
 **(2012-2013Q3 Unemployment Issuance)**
 ```{r}
 par(mar = c(3,3,4,2))
-plot(x = loan_linear_mdl_all_2012H1$xlevels$MONTH.AGE.BEGIN,
-     y = loan_linear_mdl_all_2012H1$coefficients[-(1:2)],
+plot(x = loan_linear_mdl_all_2012_2013$xlevels$MONTH.AGE.BEGIN,
+     y = loan_linear_mdl_all_2012_2013$coefficients[-(1:2)],
      type = 'h',
      col = 'darkgreen',
      lwd =5,
@@ -160,8 +168,8 @@ mtext("Controlled for Unemployment Rate at Issuance",col="red",side=3)
 
 Sample Data is for loans issues from 1-Jan-2012 through to 30-Sep-2013, in all the states in the US with a 36 month term. A random sample of 10,000 such loans is chosen for the analysis
 ```{r}
-loan_sample_all_2012H2<-fread("Sample Loans 36 2012_2013.csv", header=T)
-head(loan_sample_all_2012H2)
+loan_sample_all_2012_2013<-fread("Sample Loans 36 2012_2013.csv", header=T)
+head(loan_sample_all_2012_2013)
 ```
 
 ---
@@ -175,7 +183,7 @@ head(loan_sample_all_2012H2)
 - Factorize the age of the loan
 
 ```{r}
-loan_sample_all_model_2012H2<-as.tbl(loan_sample_all_2012H2)%>%
+loan_sample_all_model_2012_2013<-as.tbl(loan_sample_all_2012_2013)%>%
     filter(as.Date(MONTH_BEGIN_PAY_DT,origin=Sys.Date()) < 
                as.Date("2016-10-01",origin=Sys.Date()))%>%
     select(id,int_rate,MONTH.AGE.BEGIN,DEFAULT,UNEMP.RT.BEGIN_DT)%>%
@@ -183,7 +191,7 @@ loan_sample_all_model_2012H2<-as.tbl(loan_sample_all_2012H2)%>%
     mutate(UNEMP.RT.BEGIN_DT = UNEMP.RT.BEGIN_DT-mean(UNEMP.RT.BEGIN_DT))%>%
     mutate(MONTH.AGE.BEGIN = as.factor(MONTH.AGE.BEGIN))
 
-head(loan_sample_all_model_2012H2)
+
 ```
 
 ---
@@ -191,10 +199,15 @@ head(loan_sample_all_model_2012H2)
 #### Fit a Linear Model 
 **(2012-2013Q3 Unemployment Monthly)**
 ```{r}
-loan_linear_mdl_all_2012H2<-lm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT + MONTH.AGE.BEGIN - 1,
-                     data = loan_sample_all_model_2012H2)
+loan_linear_mdl_all_2012_2013_monthly<-lm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT + MONTH.AGE.BEGIN - 1,
+                     data = loan_sample_all_model_2012_2013)
 
-summary(loan_linear_mdl_all_2012H2)
+model_stats3<-model_summary(experiment = 3,
+                           model = loan_linear_mdl_all_2012_2013_monthly,
+                           geography = "ALL",
+                           period = "2012Q1-2013Q3")
+
+all_model_stats<-rbind(model_stats3,all_model_stats)
 
 ```
 
@@ -204,8 +217,8 @@ summary(loan_linear_mdl_all_2012H2)
 **(2012-2013Q3 Unemployment Monthly)**
 ```{r}
 par(mar = c(3,3,4,2))
-plot(x = loan_linear_mdl_all_2012H2$xlevels$MONTH.AGE.BEGIN,
-     y = loan_linear_mdl_all_2012H2$coefficients[-(1:2)],
+plot(x = loan_linear_mdl_all_2012_2013_monthly$xlevels$MONTH.AGE.BEGIN,
+     y = loan_linear_mdl_all_2012_2013_monthly$coefficients[-(1:2)],
      type = 'h',
      col = 'violet',
      lwd =5,
@@ -245,7 +258,6 @@ loan_sample_all_model<-as.tbl(loan_sample_all)%>%
     mutate(UNEMP.RT.BEGIN_DT = UNEMP.RT.BEGIN_DT-mean(UNEMP.RT.BEGIN_DT))%>%
     mutate(MONTH.AGE.BEGIN = as.factor(MONTH.AGE.BEGIN))
 
-head(loan_sample_all_model)
 ```
 
 ---
@@ -253,10 +265,15 @@ head(loan_sample_all_model)
 #### Fit a Linear Model 
 **(2011-2015 Unemployment Monthly)**
 ```{r}
-loan_linear_mdl_all<-lm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT+MONTH.AGE.BEGIN - 1,
+loan_linear_mdl_all_monthly<-lm(DEFAULT ~ int_rate + UNEMP.RT.BEGIN_DT+MONTH.AGE.BEGIN - 1,
                      data = loan_sample_all_model)
 
-summary(loan_linear_mdl_all)
+model_stats4<-model_summary(experiment = 4,
+                           model = loan_linear_mdl_all_monthly,
+                           geography = "ALL",
+                           period = "2011-2015")
+
+all_model_stats<-rbind(model_stats4,all_model_stats)
 
 ```
 
@@ -267,8 +284,8 @@ summary(loan_linear_mdl_all)
 **(2011-2015 Unemployment Monthly)**
 ```{r}
 par(mar=c(3,3,4,2))
-plot(x = loan_linear_mdl_all$xlevels$MONTH.AGE.BEGIN,
-     y = loan_linear_mdl_all$coefficients[-(1:2)],
+plot(x = loan_linear_mdl_all_monthly$xlevels$MONTH.AGE.BEGIN,
+     y = loan_linear_mdl_all_monthly$coefficients[-(1:2)],
      type = 'h',
      col = 'red',
      lwd=5,
@@ -293,7 +310,6 @@ loan_sample_all_model_uis<-as.tbl(loan_sample_all)%>%
     mutate(UNEMP.RT_ISS = UNEMP.RT_ISS-mean(UNEMP.RT_ISS))%>%
     mutate(MONTH.AGE.BEGIN = as.factor(MONTH.AGE.BEGIN))
 
-head(loan_sample_all_model_uis)
 ```
 
 ---
@@ -304,7 +320,12 @@ head(loan_sample_all_model_uis)
 loan_linear_mdl_all_uis<-lm(DEFAULT ~ int_rate + UNEMP.RT_ISS + MONTH.AGE.BEGIN - 1,
                      data = loan_sample_all_model_uis)
 
-summary(loan_linear_mdl_all_uis)
+model_stats5<-model_summary(experiment = 5,
+                           model = loan_linear_mdl_all_uis,
+                           geography = "ALL",
+                           period = "2011-2015")
+
+all_model_stats<-rbind(model_stats5,all_model_stats)
 
 ```
 
@@ -359,7 +380,6 @@ loan_sample_all_model_fico<-as.tbl(loan_sample_all)%>%
     mutate(fico_range_low = fico_range_low-mean(fico_range_low))%>%
     mutate(MONTH.AGE.BEGIN = as.factor(MONTH.AGE.BEGIN))
 
-head(loan_sample_all_model_fico)
 ```
 
 ---
@@ -371,7 +391,12 @@ loan_linear_mdl_all_fico<-lm(DEFAULT ~ int_rate + fico_range_low + UNEMP.RT_ISS 
                                  UNEMP.RT.BEGIN_DT + MONTH.AGE.BEGIN - 1,
                      data = loan_sample_all_model_fico)
 
-summary(loan_linear_mdl_all_fico)
+model_stats6<-model_summary(experiment = 6,
+                           model = loan_linear_mdl_all_fico,
+                           geography = "ALL",
+                           period = "2011-2015")
+
+all_model_stats<-rbind(model_stats6,all_model_stats)
 
 ```
 
@@ -391,6 +416,7 @@ plot(x = loan_linear_mdl_all_fico$xlevels$MONTH.AGE.BEGIN,
      main = "Lending Club Loans Sample (2011-2015)" )
 mtext("Controlled for FICO",col="red",side=3)
 ```
+
 
 ---
 

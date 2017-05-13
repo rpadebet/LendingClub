@@ -71,3 +71,53 @@ loan_dt<-loan_mdl[(id %in% loan_ids),]
 write.csv(loan_dt,"Sample Loans 36 2012_2013.csv")
 
 
+#####################################################
+# Loan from all States Jan-2012 to June-2012 - 36 months
+#####################################################
+# state <- "CA"
+# vintage <-c(2011:2015)
+issue<-seq(as.Date("2012-01-01",origin=Sys.Date()), 
+           as.Date("2012-06-01",origin=Sys.Date()),
+           by= "month")
+TERM <-"36 months"
+sample_size<-10000
+
+loan_mod_s<-loan_mod[(issue_d %in% issue)&(term == TERM),]
+
+## Sampling Loans
+loan_ids<-if(length(loan_mod_s$id)>sample_size){
+    sample(loan_mod_s$id,sample_size)
+} else{
+    sample(loan_mod_s$id,length(loan_mod_s$id))
+}
+
+## Select data by vintage, term and state
+loan_dt<-loan_mdl[(id %in% loan_ids),]
+
+write.csv(loan_dt,"Sample Loans 36 2012H1.csv")
+
+
+#####################################################
+# Loan from all States Oct-2014 to Dec-2015 - 36 months
+#####################################################
+# state <- "CA"
+# vintage <-c(2011:2015)
+issue<-seq(as.Date("2014-10-01",origin=Sys.Date()), 
+           as.Date("2015-12-01",origin=Sys.Date()),
+           by= "month")
+TERM <-"36 months"
+sample_size<-10000
+
+loan_mod_s<-loan_mod[(issue_d %in% issue)&(term == TERM),]
+
+## Sampling Loans
+loan_ids<-if(length(loan_mod_s$id)>sample_size){
+    sample(loan_mod_s$id,sample_size)
+} else{
+    sample(loan_mod_s$id,length(loan_mod_s$id))
+}
+
+## Select data by vintage, term and state
+loan_dt<-loan_mdl[(id %in% loan_ids),]
+
+write.csv(loan_dt,"Sample Loans 36 2014Q4-2015.csv")
