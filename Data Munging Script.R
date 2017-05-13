@@ -15,9 +15,9 @@ loan_2015<-fread(input = "Original Data/LoanStats3d_securev1.csv",header = T,ski
 
 loan_ALL <- rbind(loan_2007_2011,loan_2012_2013,loan_2014,loan_2015)
 
-# rm(loan_2007.2011,loan_2012.2013,loan_2014,loan_2015)
+rm(loan_2007_2011,loan_2012_2013,loan_2014,loan_2015)
 
-head(loan_ALL,5)
+#head(loan_ALL,5)
 
 ### Selecting Column Subset
 
@@ -29,7 +29,7 @@ numeric_cols<-c("loan_amnt","funded_amnt","int_rate","annual_inc","annual_inc_jo
 factor_cols<-c("id","application_type","term","grade","sub_grade","emp_length","home_ownership","verification_status","loan_status","purpose","zip_code","addr_state","pub_rec")
 date_cols<-c("issue_d","earliest_cr_line","last_pymnt_d")
 
-
+rm(loan_ALL)
 ## Cleaning the interest rate column to remove % sign
 loan_sub$int_rate<-gsub("%","",x = loan_sub$int_rate)
 
@@ -143,13 +143,17 @@ loan_36_hist[!((DEFAULT==1)|(DELINQ==1)),SURVIVED:=ifelse(MONTH_BEGIN_PAY_DT<=la
 loan_60_hist[!((DEFAULT==1)|(DELINQ==1)),SURVIVED:=ifelse(MONTH_BEGIN_PAY_DT<=last_pymnt_d,1,0)]
 
 
+
 # Removing Observations when loan has not survived
 loan_36_prune <- as.tbl(loan_36_hist)%>%
-    filter(SURVIVED==1)%>%
-    mutate(DEFAULT = ifelse((last_pymnt_d+months(1)==MONTH_BEGIN_PAY_DT),0,1))
+    filter(SURVIVED==1)
 
 loan_60_prune <- as.tbl(loan_60_hist)%>%
     filter(SURVIVED==1)
+
+# Cleanup memory
+rm(loan_36,loan_60,loan_sub)
+rm(loan_36_hist,loan_60_hist)
 
 # Changing Default and Delinquent columns to be 1 only in the month of default 
 # and removing survived column
@@ -166,6 +170,8 @@ loan_60_prune[DELINQ==1,DELINQ:=ifelse(MONTH_BEGIN_PAY_DT<last_pymnt_d+months(1)
 ### Recombining Data Sets
 loan_pruned<-rbind(loan_36_prune,loan_60_prune)
 
+rm(loan_36_prune,loan_60_prune)
+
 
 ### Simplifying Dataset to fit model
 loan_mdl<-as.tbl(loan_pruned)%>%
@@ -176,6 +182,8 @@ loan_mdl<-as.tbl(loan_pruned)%>%
     arrange(id,MONTH.AGE.BEGIN)
     
 saveRDS(loan_mdl,"Loans for Model")
+
+rm(loan_pruned)
 
 ### Getting Unemployment Data
 unemp.data<-read.csv("Monthly Zip3 Unemployment Rate.csv",header = T)
@@ -193,7 +201,7 @@ loan_mdl[unemp.data,UNEMP.RT.BEGIN_DT:=i.value,on=c(zip_code="zip3",MONTH_BEGIN_
 ### Getting Zip3 Income Data
 income.data<-read.csv("Income Data.csv",header = T)
 income.data<-as.data.table(income.data)
-income
+
 
 ### Joining with Zip3 Income Data
 loan_mdl<-loan_mdl[,CurrentYear:=year(MONTH_BEGIN_PAY_DT)]

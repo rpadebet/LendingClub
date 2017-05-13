@@ -15,4 +15,7 @@ model_summary<-function(model,geography,period,experiment){
     return(model_stats)
 }
 
-all_model_stats[all_model_stats$Attribute %in% c("int_rate","UNEMP.RT.BEGIN_DT","UNEMP.RT_ISS","fico_range_low"),]
+
+## Simple Summary
+simple_model_stats<-all_model_stats[all_model_stats$Attribute %in% c("int_rate","AVG.INC.ZIP","UNEMP.RT.BEGIN_DT","UNEMP.RT_ISS","fico_range_low"),]
+write.csv(simple_model_stats,"All Model Stats Simple.csv")

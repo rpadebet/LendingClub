@@ -3,7 +3,7 @@
 state <- "CA"
 vintage <-c(2012:2015)
 TERM <-"36 months"
-sample_size<-1000
+sample_size<-10000
 
 loan_mod_s<-loan_mod[(VINTAGE %in% vintage)&(term == TERM)&(addr_state == state),]
 

@@ -120,7 +120,17 @@ I_2014<-D_2014[,cols_inc2014,with=FALSE]
 setnames(I_2014,cols_inc2014,cols_named)
 I_2014<-I_2014[,YEAR:=2014]
 
-Income_Data_Raw<-rbind(I_2011,I_2012,I_2013,I_2014)
+## Since 2015 and 2016 data isn't available yet, let us assume they look like 2014 data
+
+I_2015<-D_2014[,cols_inc2014,with=FALSE]
+setnames(I_2015,cols_inc2014,cols_named)
+I_2015<-I_2015[,YEAR:=2015]
+
+I_2016<-D_2014[,cols_inc2014,with=FALSE]
+setnames(I_2016,cols_inc2014,cols_named)
+I_2016<-I_2016[,YEAR:=2016]
+
+Income_Data_Raw<-rbind(I_2011,I_2012,I_2013,I_2014,I_2015,I_2016)
 
 
 Income_Data_Raw<-as.tbl(Income_Data_Raw)
@@ -142,6 +152,4 @@ Income_Data<-as.tbl(Income_Data_Raw)%>%
            
 write.csv(x = Income_Data,file = "Income Data.csv",row.names = F)
 
-Income_Data= as.data.table(Income_Data)
 
-Income_Data[Zip3 == "073xx",]
